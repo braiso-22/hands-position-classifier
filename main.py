@@ -5,6 +5,31 @@ from pathlib import Path
 from datetime import datetime
 
 
+def guardar_datos_frame(hand_landmarks, frame, position_name, frame_num):
+    df = pd.DataFrame(columns=["id", "x", "y"])
+    for hand_landmark in hand_landmarks:
+        for point_id, landmark in enumerate(hand_landmark.landmark):
+            # save to row of dataframe
+            df = df.append({
+                "id": point_id,
+                "x": landmark.x,
+                "y": landmark.y
+            }, ignore_index=True)
+            pass
+    output_str = f"datasets/{datetime.now().strftime('%Y-%m-%d')}/{position_name}"
+    # save to csv
+    csv_output_dir = Path(output_str)
+    csv_output_dir.mkdir(parents=True, exist_ok=True)
+    csv_filename = f"{position_name}.csv"
+    df.to_csv(csv_output_dir / csv_filename, mode='a', header=False, index=False)
+    # save to image
+    frames_output_dir = output_str + "/frames/"
+    frames_output_dir_path = Path(output_str + "/frames/")
+    frames_output_dir_path.mkdir(parents=True, exist_ok=True)
+    frame_name = f"{position_name}_{frame_num}.jpg"
+    Img.guardar_imagen(frame, (frames_output_dir + frame_name))
+
+
 def mostrar_puntos_mano(frame, params):
     frame_num = params["frame_num"]
 
@@ -13,41 +38,25 @@ def mostrar_puntos_mano(frame, params):
     mp_drawing = params["mp_drawing"]
     results = hands.process(image=frame)
     hand_landmarks = results.multi_hand_landmarks
-    if hand_landmarks:
-        for hand_landmark in hand_landmarks:
-            mp_drawing.draw_landmarks(
-                frame,
-                hand_landmark,
-                mp_hand.HAND_CONNECTIONS
-            )
-
-        if frame_num % 30 == 0:
-            position_name = params["position_name"]
-            df = pd.DataFrame(columns=["id", "x", "y"])
-            for hand_landmark in hand_landmarks:
-                for point_id, landmark in enumerate(hand_landmark.landmark):
-                    # save to row of dataframe
-                    df = df.append({
-                        "id": point_id,
-                        "x": landmark.x,
-                        "y": landmark.y
-                    }, ignore_index=True)
-                    pass
-            output_str = f"datasets/{datetime.now().strftime('%Y-%m-%d')}/{position_name}"
-            # save to csv
-            csv_output_dir = Path(output_str)
-            csv_output_dir.mkdir(parents=True, exist_ok=True)
-            csv_filename = f"{position_name}.csv"
-            df.to_csv(csv_output_dir / csv_filename, mode='a', header=False, index=False)
-            # save to image
-            frames_output_dir = output_str + "/frames/"
-            frames_output_dir_path = Path(output_str + "/frames/")
-            frames_output_dir_path.mkdir(parents=True, exist_ok=True)
-            frame_name = f"{position_name}_{frame_num}.jpg"
-            Img.guardar_imagen(frame, (frames_output_dir + frame_name))
-
-            pass
     Img.escribir(frame, pos=(20, 20), size=4, text=f"Frame: {frame_num}")
+    if not hand_landmarks:
+        return frame
+    for hand_landmark in hand_landmarks:
+        mp_drawing.draw_landmarks(
+            frame,
+            hand_landmark,
+            mp_hand.HAND_CONNECTIONS
+        )
+
+    if frame_num % 30 == 0:
+        position_name = params["position_name"]
+        guardar_datos_frame(
+            hand_landmarks,
+            frame,
+            position_name,
+            frame_num
+        )
+
     return frame
 
 
