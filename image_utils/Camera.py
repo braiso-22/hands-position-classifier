@@ -77,6 +77,9 @@ def video_capture(operacion=None, operacion_params=None, mouse_callback=None):
 
         accion = mostrar_frame(frame, accion)
         if accion == -1:
+            # release
+            captura_video.release()
+            cv.destroyAllWindows()
             break
         if accion == 0:
             accion = 0
