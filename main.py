@@ -1,5 +1,6 @@
 from image_utils import Img, Camera
 import mediapipe as mp
+import joblib
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
@@ -29,7 +30,7 @@ def guardar_dataframe_vacio():
     df.to_csv(csv_output_dir / csv_filename, mode='a', header=True, index=False)
 
 
-def crear_linea_df(df,frame_num, hand_landmarks):
+def crear_linea_df(df, frame_num, hand_landmarks):
     for hand_landmark in hand_landmarks:
         for point_id, landmark in enumerate(hand_landmark.landmark):
             # where the frame is frame_num set x and y
@@ -178,7 +179,9 @@ def jugar(modelo):
 def menu():
     print("1. Obtener datos de entrenamiento")
     print("2. Entrenar clasificador")
-    print("3. Jugar")
+    print("3. Guardar clasificador")
+    print("4. Cargar modelo guardado")
+    print("5. Jugar")
     print("0. Salir")
     try:
         return int(input("Elija una opcion: "))
@@ -198,6 +201,15 @@ def main():
             modelo = entrenar_clasificador()
             pass
         elif opcion == 3:
+            nombre_modelo = input("Escribe un nombre para el modelo:\n")
+            joblib.dump(modelo, f"{nombre_modelo}.pkl")
+        elif opcion == 4:
+            nombre_modelo = input("Escribe el nombre del modelo:\n")
+            try:
+                modelo = joblib.load(f"{nombre_modelo}.pkl")
+            except FileNotFoundError:
+                print("No existe un modelo con ese nombre")
+        elif opcion == 5:
             if modelo is None:
                 print("Primero debes entrenar el clasificador")
                 continue
