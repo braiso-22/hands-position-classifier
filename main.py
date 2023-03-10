@@ -5,6 +5,12 @@ from pathlib import Path
 from datetime import datetime
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import recall_score
+from sklearn.metrics import precision_score
+from sklearn.tree import DecisionTreeClassifier
+
 
 num = [i for i in range(0, 21)]
 columns = [f"{j}{i}" for i in num for j in ["x", "y"]]
@@ -23,12 +29,12 @@ def guardar_dataframe_vacio():
     df.to_csv(csv_output_dir / csv_filename, mode='a', header=True, index=False)
 
 
-def crear_linea_df(df, hand_landmarks):
+def crear_linea_df(df,frame_num, hand_landmarks):
     for hand_landmark in hand_landmarks:
         for point_id, landmark in enumerate(hand_landmark.landmark):
             # where the frame is frame_num set x and y
-            df.loc[f"x{point_id}"] = landmark.x
-            df.loc[f"y{point_id}"] = landmark.y
+            df.loc[df.frame == frame_num, f"x{point_id}"] = landmark.x
+            df.loc[df.frame == frame_num, f"y{point_id}"] = landmark.y
     return df
 
 
@@ -39,7 +45,7 @@ def guardar_datos_frame(hand_landmarks, frame, position_name, frame_num):
         "frame": frame_num,
         "position": position_name,
     }, ignore_index=True)
-    df = crear_linea_df(df, hand_landmarks)
+    df = crear_linea_df(df, frame_num, hand_landmarks)
     output_str = f"datasets/{datetime.now().strftime('%Y-%m-%d')}"
     # save to csv
     csv_output_dir = Path(output_str)
@@ -93,13 +99,19 @@ def mostrar_puntos_mano_jugar(frame, params):
     Img.escribir(frame, pos=(20, 20), size=4, text=f"Frame: {frame_num}")
     if not hand_landmarks:
         return frame
-    modelo = params["modelo"]
-    df = pd.DataFrame(columns=columns)
-    df.loc["frame"] = 1
-    df = crear_linea_df(df, hand_landmarks)
-    df = df.drop(columns=["position"])
-    df = df.drop(columns=["frame"])
-    prediction = modelo.predict(df)
+    modelo: RandomForestClassifier = params["modelo"]
+    df_new = pd.DataFrame(columns=columns)
+    # new row
+    df_new = df_new.append({
+        "frame": frame_num,
+        "position": "test",
+    }, ignore_index=True)
+
+    df_new = crear_linea_df(df_new, frame_num, hand_landmarks)
+    df_new = df_new.drop(columns=["position"])
+    df_new = df_new.drop(columns=["frame"])
+
+    prediction = modelo.predict(df_new)
     Img.escribir(frame, pos=(20, 50), size=4, text=f"Prediction: {prediction[0]}")
 
     return frame
@@ -113,10 +125,14 @@ def entrenar_clasificador():
 
     # Clasificador
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
-    clf = RandomForestClassifier(n_estimators=100)
+    clf = DecisionTreeClassifier(random_state=42)
     clf.fit(x_train, y_train)
-
-    print(clf.score(x_test, y_test))
+    predictions = clf.predict(x_test)
+    # see how many predictions were correct
+    print("Accuracy:", accuracy_score(y_test, predictions))
+    print("Precision:", precision_score(y_test, predictions, average="macro"))
+    print("Recall:", recall_score(y_test, predictions, average="macro"))
+    print("Confusion matrix:\n", confusion_matrix(y_test, predictions))
     return clf
 
 
