@@ -198,16 +198,25 @@ def main():
         elif opcion == 1:
             obtener_datos()
         elif opcion == 2:
-            modelo = entrenar_clasificador()
+            try:
+                modelo = entrenar_clasificador()
+            except FileNotFoundError:
+                print("No existen datos de entrenamiento")
             pass
         elif opcion == 3:
+            if modelo is None:
+                print("Primero debes entrenar el clasificador")
+                continue
             nombre_modelo = input("Escribe un nombre para el modelo:\n")
-            joblib.dump(modelo, f"{nombre_modelo}.pkl")
+            models_str = "./models"
+            models_dir = Path(models_str)
+            models_dir.mkdir(parents=True, exist_ok=True)
+            joblib.dump(modelo, f"{models_str}/{nombre_modelo}.pkl")
             print(f"Modelo guardado como {nombre_modelo}.pkl")
         elif opcion == 4:
             nombre_modelo = input("Escribe el nombre del modelo:\n")
             try:
-                modelo = joblib.load(f"{nombre_modelo}.pkl")
+                modelo = joblib.load(f"./models/{nombre_modelo}.pkl")
                 print(f"Modelo {nombre_modelo}.pkl cargado correctamente")
             except FileNotFoundError:
                 print("No existe un modelo con ese nombre")
