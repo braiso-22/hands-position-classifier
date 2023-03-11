@@ -203,10 +203,12 @@ def main():
         elif opcion == 3:
             nombre_modelo = input("Escribe un nombre para el modelo:\n")
             joblib.dump(modelo, f"{nombre_modelo}.pkl")
+            print(f"Modelo guardado como {nombre_modelo}.pkl")
         elif opcion == 4:
             nombre_modelo = input("Escribe el nombre del modelo:\n")
             try:
                 modelo = joblib.load(f"{nombre_modelo}.pkl")
+                print(f"Modelo {nombre_modelo}.pkl cargado correctamente")
             except FileNotFoundError:
                 print("No existe un modelo con ese nombre")
         elif opcion == 5:
