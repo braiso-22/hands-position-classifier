@@ -12,11 +12,8 @@ from sklearn.metrics import recall_score
 from sklearn.metrics import precision_score
 from sklearn.tree import DecisionTreeClassifier
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
 import time
 
 num = [i for i in range(0, 21)]
@@ -215,10 +212,6 @@ def abrir_marcianitos() -> webdriver.Firefox:
     driver = webdriver.Firefox()
     driver.get('https://funhtml5games.com/spaceinvaders/index.html')
 
-    start_play_text = WebDriverWait(driver, 40).until(
-        EC.presence_of_element_located((By.XPATH, '//p[@id="play"]'))
-    )
-    start_play_text.click()
     return driver
 
 

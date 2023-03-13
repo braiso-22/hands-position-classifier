@@ -60,11 +60,17 @@ there are the images of your hand in the specified position and a csv file with 
 - This option loads a model from the 'models' folder.
 - You need to enter the name of the model you want to load.
 
-#### Play
-    
+#### Test model
+
 - This option opens a window where you can see your webcam feed.
 - You can press the space bar to freeze the frame and press 'q' to exit the camera window.
 - The program will classify your hand into one of the pre-defined positions and display the result in the window.
+
+#### Play
+    
+- This option opens a window where you can see your webcam feed and a firefox browser.
+- First click the camera window and then click the start button in the browser.
+- The model will classify your hand in real time and use it to control the game.
 
 ## Contributing
 Contributions to this project are welcome. 
