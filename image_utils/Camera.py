@@ -67,7 +67,7 @@ def video_capture(operacion=None, operacion_params=None, mouse_callback=None):
             continue
         if operacion:
             operacion_params["frame_num"] = frame_num
-            frame = operacion(frame, operacion_params)
+            frame, _ = operacion(frame, operacion_params)
             if frame is None:
                 print("Operacion no devolvio frame, añade un return frame")
                 return

@@ -11,7 +11,13 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import recall_score
 from sklearn.metrics import precision_score
 from sklearn.tree import DecisionTreeClassifier
-
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+import time
 
 num = [i for i in range(0, 21)]
 columns = [f"{j}{i}" for i in num for j in ["x", "y"]]
@@ -91,7 +97,7 @@ def mostrar_puntos_mano_entrenar(frame, params):
     return frame
 
 
-def mostrar_puntos_mano_jugar(frame, params):
+def mostrar_prediccion(frame, params):
     frame_num = params["frame_num"]
 
     hands = params["hands"]
@@ -99,7 +105,7 @@ def mostrar_puntos_mano_jugar(frame, params):
     hand_landmarks = results.multi_hand_landmarks
     Img.escribir(frame, pos=(20, 20), size=4, text=f"Frame: {frame_num}")
     if not hand_landmarks:
-        return frame
+        return frame, None
     modelo: RandomForestClassifier = params["modelo"]
     df_new = pd.DataFrame(columns=columns)
     # new row
@@ -113,9 +119,37 @@ def mostrar_puntos_mano_jugar(frame, params):
     df_new = df_new.drop(columns=["frame"])
 
     prediction = modelo.predict(df_new)
-    Img.escribir(frame, pos=(20, 50), size=4, text=f"Prediction: {prediction[0]}")
 
-    return frame
+    Img.escribir(frame, pos=(20, 450), size=6, text=f"Prediction: {prediction[0]}")
+
+    return frame, prediction
+
+
+def camara_juego(frame, params):
+    frame, prediccion = mostrar_prediccion(frame, params)
+    # send key down to the game
+    if prediccion is None:
+        return frame, prediccion
+    prediccion = prediccion[0]
+
+    frame_num = params["frame_num"]
+    if frame_num % 30 != 0:
+        return frame, None
+    if prediccion == "izquierda":
+        key = Keys.ARROW_LEFT
+    elif prediccion == "derecha":
+        key = Keys.ARROW_RIGHT
+    elif prediccion == "arriba":
+        key = Keys.SPACE
+    else:
+        return frame, None
+    action: ActionChains = params["action_chains"]
+    endtime = time.time() + 1.0
+    while time.time() < endtime:
+        action.key_down(key).perform()
+    action.key_up(key).perform()
+
+    return frame, None
 
 
 def entrenar_clasificador():
@@ -157,7 +191,7 @@ def obtener_datos():
         )
 
 
-def jugar(modelo):
+def prueba(modelo):
     mp_drawing = mp.solutions.drawing_utils
     mp_hand = mp.solutions.hands
     with mp_hand.Hands(
@@ -166,7 +200,7 @@ def jugar(modelo):
             min_tracking_confidence=0.6
     ) as hands:
         Camera.video_capture(
-            operacion=mostrar_puntos_mano_jugar,
+            operacion=mostrar_prediccion,
             operacion_params={
                 "hands": hands,
                 "mp_hand": mp_hand,
@@ -176,12 +210,47 @@ def jugar(modelo):
         )
 
 
+def abrir_marcianitos() -> webdriver.Firefox:
+    # With selenium open this webpage https://www.minijuegos.com/juego/space-invaders
+    driver = webdriver.Firefox()
+    driver.get('https://funhtml5games.com/spaceinvaders/index.html')
+
+    start_play_text = WebDriverWait(driver, 40).until(
+        EC.presence_of_element_located((By.XPATH, '//p[@id="play"]'))
+    )
+    start_play_text.click()
+    return driver
+
+
+def juego(modelo):
+    mp_drawing = mp.solutions.drawing_utils
+    mp_hand = mp.solutions.hands
+    with mp_hand.Hands(
+            max_num_hands=1,
+            min_detection_confidence=0.3,
+            min_tracking_confidence=0.6
+    ) as hands:
+        driver = abrir_marcianitos()
+        action_chains: ActionChains = ActionChains(driver)
+        Camera.video_capture(
+            operacion=camara_juego,
+            operacion_params={
+                "hands": hands,
+                "mp_hand": mp_hand,
+                "mp_drawing": mp_drawing,
+                "modelo": modelo,
+                "action_chains": action_chains,
+            }
+        )
+
+
 def menu():
     print("1. Obtener datos de entrenamiento")
     print("2. Entrenar clasificador")
     print("3. Guardar clasificador")
     print("4. Cargar modelo guardado")
-    print("5. Jugar")
+    print("5. Probar clasificador")
+    print("6. Jugar")
     print("0. Salir")
     try:
         return int(input("Elija una opcion: "))
@@ -224,7 +293,12 @@ def main():
             if modelo is None:
                 print("Primero debes entrenar el clasificador")
                 continue
-            jugar(modelo)
+            prueba(modelo)
+        elif opcion == 6:
+            if modelo is None:
+                print("Primero debes entrenar el clasificador")
+                continue
+            juego(modelo)
         else:
             print("Opcion invalida")
 
