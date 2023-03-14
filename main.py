@@ -1,3 +1,5 @@
+import threading
+
 from image_utils import Img, Camera
 import mediapipe as mp
 import joblib
@@ -122,6 +124,13 @@ def mostrar_prediccion(frame, params):
     return frame, prediction
 
 
+def execute_movement(key, action, duration):
+    endtime = time.time() + (duration-1)/100
+    while time.time() < endtime:
+        action.key_down(key).perform()
+    action.key_up(key).perform()
+
+
 def camara_juego(frame, params):
     frame, prediccion = mostrar_prediccion(frame, params)
     # send key down to the game
@@ -130,7 +139,8 @@ def camara_juego(frame, params):
     prediccion = prediccion[0]
 
     frame_num = params["frame_num"]
-    if frame_num % 30 != 0:
+    frame_rate = 10
+    if frame_num % frame_rate != 0:
         return frame, None
     if prediccion == "izquierda":
         key = Keys.ARROW_LEFT
@@ -141,10 +151,7 @@ def camara_juego(frame, params):
     else:
         return frame, None
     action: ActionChains = params["action_chains"]
-    endtime = time.time() + 1.0
-    while time.time() < endtime:
-        action.key_down(key).perform()
-    action.key_up(key).perform()
+    threading.Thread(target=execute_movement, args=(key, action, frame_rate - 2)).start()
 
     return frame, None
 
