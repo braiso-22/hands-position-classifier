@@ -158,7 +158,11 @@ def camara_juego(frame, params):
 
 
 def entrenar_clasificador():
-    df = pd.read_csv(f"datasets/{datetime.now().strftime('%Y-%m-%d')}/{datetime.now().strftime('%Y-%m-%d')}.csv")
+    try:
+        df = pd.read_csv(f"datasets/{datetime.now().strftime('%Y-%m-%d')}/{datetime.now().strftime('%Y-%m-%d')}.csv")
+    except FileNotFoundError:
+        print("No existen datos de entrenamiento")
+        return None
     df = df.drop(columns=["frame"])
     y = df["position"]
     x = df.drop(columns=["position"])
@@ -197,6 +201,9 @@ def obtener_datos():
 
 
 def prueba(modelo):
+    if modelo is None:
+        print("Primero debes entrenar el clasificador")
+        return
     mp_drawing = mp.solutions.drawing_utils
     mp_hand = mp.solutions.hands
     with mp_hand.Hands(
@@ -224,6 +231,12 @@ def abrir_marcianitos() -> webdriver.Firefox:
 
 
 def juego(modelo, controles):
+    if modelo is None:
+        print("Primero debes entrenar el clasificador")
+        return
+    if controles is None:
+        print("Primero debes seleccionar los controles")
+        return
     mp_drawing = mp.solutions.drawing_utils
     mp_hand = mp.solutions.hands
     with mp_hand.Hands(
@@ -247,6 +260,9 @@ def juego(modelo, controles):
 
 
 def seleccionar_controles(modelo):
+    if modelo is None:
+        print("Primero debes entrenar el clasificador")
+        return None
     clases = modelo.classes_
     if len(clases) < 3:
         print("El modelo no tiene como minimo 3 poses a clasificar")
@@ -270,6 +286,29 @@ def seleccionar_controles(modelo):
     return controles
 
 
+def save_my_model(modelo):
+    if modelo is None:
+        print("Primero debes entrenar el clasificador")
+        return
+    nombre_modelo = input("Escribe un nombre para el modelo:\n")
+    models_str = "./models"
+    models_dir = Path(models_str)
+    models_dir.mkdir(parents=True, exist_ok=True)
+    joblib.dump(modelo, f"{models_str}/{nombre_modelo}.pkl")
+    print(f"Modelo guardado como {nombre_modelo}.pkl")
+
+
+def load_my_model():
+    nombre_modelo = input("Escribe el nombre del modelo:\n")
+    try:
+        modelo = joblib.load(f"./models/{nombre_modelo}.pkl")
+        print(f"Modelo {nombre_modelo}.pkl cargado correctamente")
+        return modelo
+    except FileNotFoundError:
+        print("No existe un modelo con ese nombre")
+        return None
+
+
 def menu():
     print("1. Obtener datos de entrenamiento")
     print("2. Entrenar clasificador")
@@ -285,57 +324,35 @@ def menu():
         return -1
 
 
+def execute_option(option, model, controls):
+    if option == 0:
+        exit(0)
+    elif option == 1:
+        obtener_datos()
+    elif option == 2:
+        model = entrenar_clasificador()
+    elif option == 3:
+        save_my_model(model)
+    elif option == 4:
+        model = load_my_model()
+    elif option == 5:
+        prueba(model)
+    elif option == 6:
+        seleccionar_controles(model)
+    elif option == 7:
+        juego(model, controls)
+    else:
+        print("Opcion invalida")
+    return model, controls
+
+
 def main():
     modelo = None
     controles = None
+
     while True:
-        opcion = menu()
-        if opcion == 0:
-            break
-        elif opcion == 1:
-            obtener_datos()
-        elif opcion == 2:
-            try:
-                modelo = entrenar_clasificador()
-            except FileNotFoundError:
-                print("No existen datos de entrenamiento")
-            pass
-        elif opcion == 3:
-            if modelo is None:
-                print("Primero debes entrenar el clasificador")
-                continue
-            nombre_modelo = input("Escribe un nombre para el modelo:\n")
-            models_str = "./models"
-            models_dir = Path(models_str)
-            models_dir.mkdir(parents=True, exist_ok=True)
-            joblib.dump(modelo, f"{models_str}/{nombre_modelo}.pkl")
-            print(f"Modelo guardado como {nombre_modelo}.pkl")
-        elif opcion == 4:
-            nombre_modelo = input("Escribe el nombre del modelo:\n")
-            try:
-                modelo = joblib.load(f"./models/{nombre_modelo}.pkl")
-                print(f"Modelo {nombre_modelo}.pkl cargado correctamente")
-            except FileNotFoundError:
-                print("No existe un modelo con ese nombre")
-        elif opcion == 5:
-            if modelo is None:
-                print("Primero debes entrenar el clasificador")
-                continue
-            prueba(modelo)
-        elif opcion == 6:
-            if modelo is None:
-                print("Primero debes entrenar el clasificador")
-                continue
-            seleccionar_controles(modelo)
-        elif opcion == 7:
-            if modelo is None:
-                print("Primero debes entrenar el clasificador")
-            if controles is None:
-                print("Primero debes seleccionar los controles")
-                continue
-            juego(modelo, controles)
-        else:
-            print("Opcion invalida")
+        option = menu()
+        modelo, controles = execute_option(option, modelo, controles)
 
 
 if __name__ == '__main__':
