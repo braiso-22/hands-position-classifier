@@ -66,6 +66,11 @@ there are the images of your hand in the specified position and a csv file with 
 - You can press the space bar to freeze the frame and press 'q' to exit the camera window.
 - The program will classify your hand into one of the pre-defined positions and display the result in the window.
 
+#### Select controls
+
+- This option shows you the list of poses that has the trained model, for you to map them
+to the controls of the game.
+
 #### Play
     
 - This option opens a window where you can see your webcam feed and a firefox browser.

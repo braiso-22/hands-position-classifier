@@ -125,7 +125,7 @@ def mostrar_prediccion(frame, params):
 
 
 def execute_movement(key, action, duration):
-    endtime = time.time() + (duration-1)/100
+    endtime = time.time() + (duration - 1) / 100
     while time.time() < endtime:
         action.key_down(key).perform()
     action.key_up(key).perform()
@@ -142,11 +142,12 @@ def camara_juego(frame, params):
     frame_rate = 10
     if frame_num % frame_rate != 0:
         return frame, None
-    if prediccion == "izquierda":
+    controles = params["controles"]
+    if prediccion == controles["izquierda"]:
         key = Keys.ARROW_LEFT
-    elif prediccion == "derecha":
+    elif prediccion == controles["derecha"]:
         key = Keys.ARROW_RIGHT
-    elif prediccion == "arriba":
+    elif prediccion == controles["arriba"]:
         key = Keys.SPACE
     else:
         return frame, None
@@ -222,7 +223,7 @@ def abrir_marcianitos() -> webdriver.Firefox:
     return driver
 
 
-def juego(modelo):
+def juego(modelo, controles):
     mp_drawing = mp.solutions.drawing_utils
     mp_hand = mp.solutions.hands
     with mp_hand.Hands(
@@ -240,8 +241,33 @@ def juego(modelo):
                 "mp_drawing": mp_drawing,
                 "modelo": modelo,
                 "action_chains": action_chains,
+                "controles": controles,
             }
         )
+
+
+def seleccionar_controles(modelo):
+    clases = modelo.classes_
+    if len(clases) < 3:
+        print("El modelo no tiene como minimo 3 poses a clasificar")
+        return
+    print("Tus poses son:")
+    [print(f"{i + 1}. {clase}") for i, clase in enumerate(clases)]
+    # ahora vamos a pedir que seleccione el orden de las clases
+    controles = {"arriba": None, "izquierda": None, "derecha": None}
+    for control in controles:
+        while True:
+            try:
+                opcion = int(input(f"Selecciona la posicion de {control}: "))
+                if opcion < 1 or opcion > len(clases):
+                    print("Opcion no valida")
+                    continue
+                controles[control] = clases[opcion - 1]
+                break
+            except ValueError:
+                print("Opcion no valida")
+                continue
+    return controles
 
 
 def menu():
@@ -250,7 +276,8 @@ def menu():
     print("3. Guardar clasificador")
     print("4. Cargar modelo guardado")
     print("5. Probar clasificador")
-    print("6. Jugar")
+    print("6. Seleccionar controles")
+    print("7. Jugar")
     print("0. Salir")
     try:
         return int(input("Elija una opcion: "))
@@ -260,6 +287,7 @@ def menu():
 
 def main():
     modelo = None
+    controles = None
     while True:
         opcion = menu()
         if opcion == 0:
@@ -298,7 +326,14 @@ def main():
             if modelo is None:
                 print("Primero debes entrenar el clasificador")
                 continue
-            juego(modelo)
+            seleccionar_controles(modelo)
+        elif opcion == 7:
+            if modelo is None:
+                print("Primero debes entrenar el clasificador")
+            if controles is None:
+                print("Primero debes seleccionar los controles")
+                continue
+            juego(modelo, controles)
         else:
             print("Opcion invalida")
 
