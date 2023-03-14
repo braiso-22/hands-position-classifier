@@ -151,7 +151,7 @@ def camara_juego(frame, params):
     else:
         return frame, None
     action: ActionChains = params["action_chains"]
-    threading.Thread(target=execute_movement, args=(key, action, frame_rate - 2)).start()
+    threading.Thread(target=execute_movement, args=(key, action, frame_rate)).start()
 
     return frame, None
 
